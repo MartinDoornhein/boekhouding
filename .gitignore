@@ -24,3 +24,11 @@ build/
 .DS_Store
 .idea/
 .vscode/
+
+# Terraform: state bevat de geheime API-sleutel
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+crash.log

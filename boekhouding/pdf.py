@@ -21,7 +21,7 @@ def _p(text, style):
     return Paragraph(escape(str(text or "")).replace("\n", "<br/>"), style)
 
 
-def build_invoice_pdf(inv, cust, lines, totals, s, logo_path, helpers, vat_text=None, credit_of=None):
+def build_invoice_pdf(inv, cust, lines, totals, s, logo, helpers, vat_text=None, credit_of=None):
     eur, datum, aantal, line_amount = (helpers["eur"], helpers["datum"], helpers["aantal"],
                                        helpers["line_amount"])
     buf = io.BytesIO()
@@ -41,13 +41,13 @@ def build_invoice_pdf(inv, cust, lines, totals, s, logo_path, helpers, vat_text=
     story = []
 
     # Kop: logo/bedrijfsnaam links, gegevens rechts
-    if logo_path:
-        ir = ImageReader(str(logo_path))
+    if logo:  # bytes (PNG/JPG)
+        ir = ImageReader(io.BytesIO(logo))
         iw, ih = ir.getSize()
         h = 18 * mm
         w = min(iw * h / ih, 70 * mm)
         h = ih * w / iw
-        left = Image(str(logo_path), width=w, height=h)
+        left = Image(io.BytesIO(logo), width=w, height=h)
     else:
         left = _p(s.get("bedrijfsnaam"), company)
     addr = "\n".join(x for x in [

@@ -3,10 +3,11 @@ import datetime as dt
 import io
 from urllib.parse import quote
 
-from flask import Blueprint, current_app, flash, redirect, render_template, request, send_file, url_for
+from flask import Blueprint, flash, redirect, render_template, request, send_file, url_for
 
 from .constants import VAT_MODE_TEXT, VAT_MODES
 from .db import available_years, get_db, settings
+from .files import file_data
 from .formatting import eur, fmt_date, fmt_qty, money_input, parse_date, parse_money, parse_qty
 from .invoices import invoice_summaries, invoice_totals, line_amount, load_invoice, next_invoice_number
 
@@ -226,8 +227,7 @@ def factuur_pdf(inv_id):
         r = get_db().execute("SELECT number FROM invoices WHERE id=?", (inv["credit_of"],)).fetchone()
         credit_of = r["number"] if r else None
     s = settings()
-    logo = current_app.config["DATA_DIR"] / s["logo"] if s.get("logo") else None
-    data = build_invoice_pdf(inv, cust, lines, totals, s, logo if logo and logo.exists() else None,
+    data = build_invoice_pdf(inv, cust, lines, totals, s, file_data(s.get("logo")),
                              helpers={"eur": eur, "datum": fmt_date, "aantal": fmt_qty,
                                       "line_amount": line_amount},
                              vat_text=VAT_MODE_TEXT.get(inv["vat_mode"]), credit_of=credit_of)

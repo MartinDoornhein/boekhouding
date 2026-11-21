@@ -1,0 +1,17 @@
+# Litestream 0.5.x: repliceert de SQLite-database (incl. bonnen en logo) continu naar
+# Scaleway Object Storage. Waarden komen uit omgevingsvariabelen (.env, zie .env.example).
+# Sleutels leest Litestream zelf uit LITESTREAM_ACCESS_KEY_ID / LITESTREAM_SECRET_ACCESS_KEY.
+# BOEKHOUDING_DB wordt gezet door start.sh.
+
+snapshot:
+  interval: 24h      # elke dag een volledige snapshot
+  retention: 720h    # 30 dagen snapshots en historie: herstel naar elk moment in die periode
+
+dbs:
+  - path: ${BOEKHOUDING_DB}
+    replica:
+      type: s3
+      bucket: ${BOEKHOUDING_S3_BUCKET}
+      path: boekhouding
+      endpoint: s3.${BOEKHOUDING_S3_REGION}.scw.cloud
+      region: ${BOEKHOUDING_S3_REGION}

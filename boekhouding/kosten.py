@@ -1,13 +1,12 @@
 """Kosten en bonnetjes."""
 import datetime as dt
 from decimal import Decimal
-from pathlib import Path
 
-from flask import Blueprint, abort, current_app, flash, redirect, render_template, request, send_file, url_for
-from werkzeug.utils import secure_filename
+from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
 
 from .constants import ALLOWED_RECEIPTS, DEFAULT_CATEGORIES, EXPENSE_VAT_TYPES
 from .db import available_years, get_db
+from .files import delete_file, send_stored_file, store_file
 from .formatting import money_input, parse_date, parse_money, quarter_range, rhu
 
 bp = Blueprint("kosten", __name__)
@@ -28,26 +27,6 @@ def calc_expense(total, vat_type, rate, override):
     # verlegd: het factuurbedrag is excl. btw; je berekent zelf de btw (verschuldigd én aftrekbaar)
     vat = override if override is not None else rhu(Decimal(total) * rate / 100)
     return total, vat
-
-
-def _store_receipt(exp_id, date, file):
-    ext = Path(file.filename).suffix.lower()
-    if ext not in ALLOWED_RECEIPTS:
-        raise ValueError(f"Bestandstype {ext or '?'} niet toegestaan (pdf, jpg, png, webp, heic).")
-    upload_dir = current_app.config["UPLOAD_DIR"]
-    folder = upload_dir / date[:4]
-    folder.mkdir(parents=True, exist_ok=True)
-    name = f"{exp_id:05d}_{secure_filename(file.filename) or 'bon' + ext}"
-    file.save(folder / name)
-    return f"{date[:4]}/{name}"
-
-
-def _delete_receipt(rel):
-    upload_dir = current_app.config["UPLOAD_DIR"]
-    if rel:
-        p = (upload_dir / rel).resolve()
-        if p.is_file() and upload_dir in p.parents:
-            p.unlink()
 
 
 @bp.route("/kosten")
@@ -96,22 +75,21 @@ def kosten_bewerken(eid=None):
                                    "vat_rate, total_cents, amount_excl_cents, vat_cents) "
                                    "VALUES (?,?,?,?,?,?,?,?,?)", vals).lastrowid
             file = request.files.get("receipt")
+            old_receipt = exp["receipt_id"] if exp else None
             if file and file.filename:
-                old = exp["receipt_path"] if exp else None
-                rel = _store_receipt(eid, date, file)
-                get_db().execute("UPDATE expenses SET receipt_path=? WHERE id=?", (rel, eid))
-                if old and old != rel:
-                    _delete_receipt(old)
-            elif f.get("remove_receipt") and exp and exp["receipt_path"]:
-                _delete_receipt(exp["receipt_path"])
-                get_db().execute("UPDATE expenses SET receipt_path=NULL WHERE id=?", (eid,))
+                get_db().execute("UPDATE expenses SET receipt_id=? WHERE id=?",
+                                 (store_file(file, ALLOWED_RECEIPTS), eid))
+                delete_file(old_receipt)
+            elif f.get("remove_receipt") and old_receipt:
+                get_db().execute("UPDATE expenses SET receipt_id=NULL WHERE id=?", (eid,))
+                delete_file(old_receipt)
             get_db().commit()
         except ValueError as e:
             get_db().rollback()
             flash(str(e), "error")
             vals = {k: f.get(k, "") for k in ("date", "supplier", "description", "category", "vat_type",
                                               "vat_rate", "total", "vat_override")}
-            vals["receipt_path"] = exp["receipt_path"] if exp else None
+            vals["receipt_id"] = exp["receipt_id"] if exp else None
             return render_template("kosten_form.html", e=vals, eid=exp["id"] if exp else None,
                                    categories=categories())
         flash("Kosten opgeslagen.", "ok")
@@ -124,7 +102,7 @@ def kosten_bewerken(eid=None):
                 "category": exp["category"] or "", "vat_type": exp["vat_type"], "vat_rate": str(exp["vat_rate"]),
                 "total": money_input(exp["total_cents"]),
                 "vat_override": money_input(exp["vat_cents"]) if exp["vat_cents"] != auto_vat else "",
-                "receipt_path": exp["receipt_path"], "amount_excl_cents": exp["amount_excl_cents"],
+                "receipt_id": exp["receipt_id"], "amount_excl_cents": exp["amount_excl_cents"],
                 "vat_cents": exp["vat_cents"]}
     else:
         vals = {"date": dt.date.today().isoformat(), "vat_type": "nl", "vat_rate": "21"}
@@ -134,8 +112,8 @@ def kosten_bewerken(eid=None):
 @bp.post("/kosten/<int:eid>/verwijderen")
 def kosten_verwijderen(eid):
     exp = get_db().execute("SELECT * FROM expenses WHERE id=?", (eid,)).fetchone() or abort(404)
-    _delete_receipt(exp["receipt_path"])
     get_db().execute("DELETE FROM expenses WHERE id=?", (eid,))
+    delete_file(exp["receipt_id"])
     get_db().commit()
     flash("Kosten verwijderd.", "ok")
     return redirect(url_for("kosten.kosten", jaar=exp["date"][:4]))
@@ -143,11 +121,5 @@ def kosten_verwijderen(eid):
 
 @bp.route("/kosten/<int:eid>/bon")
 def kosten_bon(eid):
-    exp = get_db().execute("SELECT receipt_path FROM expenses WHERE id=?", (eid,)).fetchone()
-    if not exp or not exp["receipt_path"]:
-        abort(404)
-    upload_dir = current_app.config["UPLOAD_DIR"]
-    p = (upload_dir / exp["receipt_path"]).resolve()
-    if upload_dir not in p.parents or not p.is_file():
-        abort(404)
-    return send_file(p)
+    exp = get_db().execute("SELECT receipt_id FROM expenses WHERE id=?", (eid,)).fetchone()
+    return send_stored_file(exp["receipt_id"] if exp else None)

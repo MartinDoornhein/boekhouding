@@ -1,0 +1,3 @@
+# Kopieer naar terraform.tfvars (staat in .gitignore).
+bucket_name = "mijn-boekhouding-backup"   # wereldwijd uniek
+region      = "nl-ams"

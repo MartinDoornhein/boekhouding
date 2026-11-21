@@ -23,7 +23,7 @@
     <td>{{ e.date|datum }}</td><td>{{ e.supplier or '' }}</td><td>{{ e.description or '' }}</td>
     <td>{{ e.category }}{% if e.vat_type in ('eu_verlegd','buiten_eu_verlegd') %} <span class="badge b-concept">verlegd</span>{% endif %}</td>
     <td class="num">{{ e.amount_excl_cents|eur }}</td><td class="num">{{ e.vat_cents|eur }}</td><td class="num">{{ e.total_cents|eur }}</td>
-    <td>{% if e.receipt_path %}<a href="{{ url_for('kosten.kosten_bon', eid=e.id) }}" target="_blank" onclick="event.stopPropagation()">bekijk</a>{% else %}<span class="muted">—</span>{% endif %}</td>
+    <td>{% if e.receipt_id %}<a href="{{ url_for('kosten.kosten_bon', eid=e.id) }}" target="_blank" onclick="event.stopPropagation()">bekijk</a>{% else %}<span class="muted">—</span>{% endif %}</td>
   </tr>
   {% endfor %}
   </tbody>

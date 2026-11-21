@@ -46,12 +46,76 @@ Dat is de input voor de winst uit onderneming in je IB-aangifte.
 
 ## Data en back-up (bewaarplicht 7 jaar)
 
-Alles staat in de map `data/` naast de app (de Flask instance-map, staat in `.gitignore`): `boekhouding.db` (SQLite) en `bonnen/<jaar>/`.
-- Zet `data/` in een map die automatisch geback-upt wordt, of
-- gebruik *Instellingen → Back-up downloaden* (zip met database en alle bonnen), of
-- kies zelf een locatie: `BOEKHOUDING_DATA=/pad/naar/map python -m boekhouding`.
+Alles staat in één SQLite-bestand: `data/boekhouding.db`, inclusief bonnen en logo. `data/` is de
+Flask instance-map en staat in `.gitignore`. Een andere locatie kies je met `BOEKHOUDING_DATA=/pad/naar/map`.
 
-De database is gewone SQLite, dus je kunt hem ook rechtstreeks bevragen of naar je eigen tooling exporteren.
+- *Instellingen → Back-up downloaden* geeft een zip met de database en alle bonnen als losse bestanden.
+- `flask --app boekhouding archive -o archief.zip` maakt dezelfde zip vanaf de commandline.
+- Continue back-up naar Scaleway met Litestream, zie hieronder.
+
+### Continue back-up naar Scaleway Object Storage (Litestream)
+
+[Litestream](https://litestream.io) repliceert elke wijziging binnen ongeveer een seconde naar een bucket.
+Je kunt 30 dagen terug naar elk willekeurig moment.
+
+**1. Bucket en sleutel aanmaken (Terraform, eenmalig)**
+
+```bash
+cd infra/scaleway
+cp terraform.tfvars.example terraform.tfvars     # kies een unieke bucketnaam
+export SCW_ACCESS_KEY=... SCW_SECRET_KEY=... SCW_DEFAULT_ORGANIZATION_ID=...   # je eigen beheerderssleutel
+terraform init && terraform apply
+terraform output -raw env_file > ../../.env      # bucket, regio en Litestream-sleutel
+```
+
+Dit maakt het volgende aan:
+- een **apart project**;
+- een bucket met **versioning**: verwijderde of overschreven bestanden blijven nog 30 dagen terug te halen;
+- een **applicatie-sleutel die alleen objecten in dat project mag lezen en schrijven**. Die sleutel kan versioning,
+  lifecycle-regels en de bucket zelf niet aanpassen.
+
+Lifecycle-regels: `boekhouding/` (de replica) ruimt oude versies na 30 dagen op. `archief/` wordt nooit
+automatisch verwijderd en gaat na 30 dagen naar GLACIER.
+
+> De Terraform-state bevat de geheime sleutel. `*.tfstate` staat daarom in `.gitignore`; bewaar de state veilig.
+
+**2. Litestream installeren en starten**
+
+```bash
+brew install litestream     # of een release van github.com/benbjohnson/litestream
+./start.sh
+```
+
+`start.sh` leest `.env`. Ontbreekt de database lokaal, dan haalt hij die eerst terug van Scaleway.
+Daarna draait de app onder `litestream replicate`. Zonder `BOEKHOUDING_S3_BUCKET` start de app gewoon
+zonder replicatie, met een waarschuwing. Litestream ondersteunt Windows niet officieel; `start.bat` start zonder replicatie.
+
+> Laat nooit twee machines tegelijk naar dezelfde bucket repliceren (bijv. laptop én server).
+
+**3. Herstel testen (doe dit meteen)**
+
+Een back-up die je nooit hebt teruggezet, is nog geen back-up:
+
+```bash
+set -a; . ./.env; set +a
+export BOEKHOUDING_DB=/tmp/herstel/boekhouding.db
+litestream restore -config litestream.yml -o /tmp/herstel/boekhouding.db "$BOEKHOUDING_DB"
+BOEKHOUDING_DATA=/tmp/herstel BOEKHOUDING_PORT=5051 .venv/bin/python -m boekhouding
+```
+
+Open http://127.0.0.1:5051 en controleer facturen en bonnen. Een eerder moment herstel je met
+`-timestamp 2026-11-20T12:00:00Z`.
+
+**4. Jaararchief**
+
+Litestream bewaart 30 dagen. Voor de bewaarplicht van 7 jaar zet je eens per jaar (bijv. na de laatste
+btw-aangifte) een archief in de bucket. Daarvoor is de AWS CLI nodig (`brew install awscli`):
+
+```bash
+scripts/archive.sh
+```
+
+Bewaar desgewenst ook een kopie op je NAS.
 
 ## Op de homelab draaien
 
@@ -76,10 +140,15 @@ boekhouding/            het package (create_app in __init__.py)
 ├── invoices.py         factuurberekeningen
 ├── btw_aangifte.py     btw-aangifte per kwartaal
 ├── pdf.py              factuur-PDF (ReportLab)
+├── files.py            bonnen en logo als BLOB in de database
+├── archief.py          back-up-zip en `flask archive`
 ├── rapportage.py       blueprint: overzicht, btw, jaar
 ├── klanten.py, facturen.py, kosten.py, instellingen.py   overige blueprints
 ├── templates/, static/
 tests/                  pytest
+infra/scaleway/         Terraform: project, bucket en sleutel voor Litestream
+litestream.yml          Litestream-config (waarden uit .env)
+scripts/archive.sh      jaararchief naar de bucket
 data/                   lokale data (niet in git)
 ```
 

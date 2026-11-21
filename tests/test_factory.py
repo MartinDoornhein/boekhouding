@@ -1,3 +1,5 @@
+import sqlite3
+
 from boekhouding import create_app
 
 
@@ -9,7 +11,9 @@ def test_config(tmp_path):
 def test_data_dir_is_created(tmp_path):
     app = create_app({"DATA_DIR": tmp_path / "data"})
     assert app.config["DATABASE"].is_file()
-    assert app.config["UPLOAD_DIR"].is_dir()
+    con = sqlite3.connect(app.config["DATABASE"])
+    assert con.execute("PRAGMA journal_mode").fetchone()[0] == "wal"  # vereist door Litestream
+    con.close()
     assert (tmp_path / "data" / ".secret").is_file()
 
 

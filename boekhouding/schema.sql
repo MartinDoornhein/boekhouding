@@ -24,7 +24,14 @@ CREATE TABLE IF NOT EXISTS expenses (
     id INTEGER PRIMARY KEY, date TEXT NOT NULL, supplier TEXT, description TEXT,
     category TEXT, vat_type TEXT NOT NULL DEFAULT 'nl', vat_rate INTEGER DEFAULT 21,
     total_cents INTEGER NOT NULL, amount_excl_cents INTEGER NOT NULL,
-    vat_cents INTEGER NOT NULL DEFAULT 0, receipt_path TEXT,
+    vat_cents INTEGER NOT NULL DEFAULT 0,
+    receipt_id INTEGER REFERENCES files(id),
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+-- Bonnen en logo staan als BLOB in de database, zodat Litestream alles repliceert.
+CREATE TABLE IF NOT EXISTS files (
+    id INTEGER PRIMARY KEY, name TEXT NOT NULL, mimetype TEXT NOT NULL,
+    size INTEGER NOT NULL, data BLOB NOT NULL,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
 CREATE INDEX IF NOT EXISTS ix_inv_date ON invoices(date);

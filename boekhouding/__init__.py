@@ -17,7 +17,7 @@ DEFAULT_DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 
 
 def create_app(test_config=None):
-    # De instance-map (buiten het package) bevat alle lokale data: database, bonnen, logo en secret.
+    # De instance-map (buiten het package) bevat de lokale data: database (incl. bonnen en logo) en secret.
     data_dir = Path(os.environ.get("BOEKHOUDING_DATA", DEFAULT_DATA_DIR)).resolve()
     if test_config and "DATA_DIR" in test_config:
         data_dir = Path(test_config["DATA_DIR"]).resolve()
@@ -25,7 +25,6 @@ def create_app(test_config=None):
     app.config.from_mapping(
         DATA_DIR=data_dir,
         DATABASE=data_dir / "boekhouding.db",
-        UPLOAD_DIR=data_dir / "bonnen",
         PASSWORD=os.environ.get("BOEKHOUDING_WACHTWOORD", ""),
         MAX_CONTENT_LENGTH=25 * 1024 * 1024,
     )
@@ -33,14 +32,15 @@ def create_app(test_config=None):
         # Optioneel: eigen instellingen in <data>/config.py
         app.config.from_pyfile("config.py", silent=True)
     else:
-        app.config.from_mapping(test_config)
+        app.config.from_mapping({**test_config, "DATA_DIR": data_dir})
 
-    app.config["UPLOAD_DIR"].mkdir(parents=True, exist_ok=True)
+    app.config["DATA_DIR"].mkdir(parents=True, exist_ok=True)
     if not app.config.get("SECRET_KEY"):  # Flask zet standaard SECRET_KEY=None
         app.config["SECRET_KEY"] = _secret_key(app.config["DATA_DIR"])
 
-    from . import db
+    from . import archief, db
     db.init_app(app)
+    archief.init_app(app)
     with app.app_context():
         db.init_db()
 

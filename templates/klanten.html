@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Klanten{% endblock %}
+{% block content %}
+<div class="head"><h1>Klanten</h1><a class="btn primary" href="{{ url_for('klant_bewerken') }}">+ Klant</a></div>
+<div class="card">
+{% if customers %}
+<table>
+  <thead><tr><th>Naam</th><th>Contact</th><th>E-mail</th><th>Plaats</th><th>Btw-id</th><th class="num">Facturen</th></tr></thead>
+  <tbody>
+  {% for c in customers %}
+  <tr class="link" onclick="location='{{ url_for('klant_bewerken', cid=c.id) }}'">
+    <td>{{ c.name }}</td><td>{{ c.contact or '' }}</td><td>{{ c.email or '' }}</td>
+    <td>{{ c.city or '' }}{% if c.country and c.country != 'Nederland' %} ({{ c.country }}){% endif %}</td>
+    <td>{{ c.vat_id or '' }}</td><td class="num">{{ c.n }}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}<p class="muted">Nog geen klanten.</p>{% endif %}
+</div>
+{% endblock %}

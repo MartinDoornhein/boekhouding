@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}Factuur {{ inv.number or 'concept' }}{% endblock %}
+{% block content %}
+<div class="head">
+  <h1>{{ 'Creditfactuur' if inv.credit_of else 'Factuur' }} {{ inv.number or '(concept)' }}
+    {% set late = inv.status == 'open' and inv.due_date < today %}
+    {% if late %}<span class="badge b-late">te laat</span>{% else %}<span class="badge b-{{ inv.status }}">{{ inv.status }}</span>{% endif %}
+  </h1>
+  <div class="actions">
+    {% if inv.status == 'concept' %}
+      <a class="btn" href="{{ url_for('factuur_bewerken', inv_id=inv.id) }}">Bewerken</a>
+      <a class="btn" href="{{ url_for('factuur_pdf', inv_id=inv.id) }}" target="_blank">Voorbeeld PDF</a>
+      <form method="post" action="{{ url_for('factuur_definitief', inv_id=inv.id) }}"
+            onsubmit="return confirm('Definitief maken? Daarna krijgt de factuur een nummer en kun je hem niet meer wijzigen.')">
+        <button class="primary">Definitief maken</button></form>
+      <form method="post" action="{{ url_for('factuur_verwijderen', inv_id=inv.id) }}" onsubmit="return confirm('Concept verwijderen?')">
+        <button class="danger">Verwijderen</button></form>
+    {% else %}
+      <a class="btn primary" href="{{ url_for('factuur_pdf', inv_id=inv.id, download=1) }}">PDF downloaden</a>
+      <a class="btn" href="{{ url_for('factuur_pdf', inv_id=inv.id) }}" target="_blank">Bekijken</a>
+      {% if mailto %}<a class="btn" href="{{ mailto }}" title="Opent je mailprogramma; voeg de gedownloade PDF als bijlage toe">Mail opstellen</a>{% endif %}
+      {% if inv.status == 'open' %}
+        <form method="post" action="{{ url_for('factuur_betaald', inv_id=inv.id) }}">
+          <input type="date" name="paid_date" value="{{ today }}"><button>Betaald</button></form>
+      {% else %}
+        <form method="post" action="{{ url_for('factuur_heropenen', inv_id=inv.id) }}"><button>Terug naar open</button></form>
+      {% endif %}
+      {% if not inv.credit_of %}
+      <form method="post" action="{{ url_for('factuur_crediteren', inv_id=inv.id) }}" onsubmit="return confirm('Creditfactuur aanmaken voor deze factuur?')">
+        <button>Crediteren</button></form>
+      {% endif %}
+    {% endif %}
+  </div>
+</div>
+
+<div class="split">
+  <div class="card">
+    <table>
+      <thead><tr><th>Omschrijving</th><th class="num">Aantal</th><th class="num">Prijs</th>
+        {% if inv.vat_mode == 'normaal' %}<th class="num">Btw</th>{% endif %}<th class="num">Bedrag</th></tr></thead>
+      <tbody>
+      {% for l in lines %}
+        <tr><td>{{ l.description }}</td><td class="num">{{ l.quantity|aantal }}</td><td class="num">{{ l.unit_price_cents|eur }}</td>
+          {% if inv.vat_mode == 'normaal' %}<td class="num">{{ l.vat_rate }}%</td>{% endif %}
+          <td class="num">{{ line_amount(l)|eur }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    <div class="totals" style="margin-top:12px">
+      <div><span>Subtotaal</span><span>{{ t.subtotal|eur }}</span></div>
+      {% if inv.vat_mode == 'normaal' %}
+        {% for rate, base, vat in t.groups %}<div><span>Btw {{ rate }}% over {{ base|eur }}</span><span>{{ vat|eur }}</span></div>{% endfor %}
+      {% else %}<div><span>Btw</span><span>{{ 0|eur }}</span></div>{% endif %}
+      <div class="grand"><span>Totaal</span><span>{{ t.total|eur }}</span></div>
+    </div>
+    {% if vat_text %}<p><strong>{{ vat_text }}</strong></p>{% endif %}
+    {% if inv.notes %}<p class="muted">{{ inv.notes }}</p>{% endif %}
+  </div>
+  <div class="card">
+    <dl class="kv">
+      <dt>Klant</dt><dd><a href="{{ url_for('klant_bewerken', cid=c.id) }}">{{ c.name }}</a></dd>
+      {% if c.email %}<dt>E-mail</dt><dd>{{ c.email }}</dd>{% endif %}
+      <dt>Datum</dt><dd>{{ inv.date|datum }}</dd>
+      {% if not inv.credit_of %}<dt>Vervaldatum</dt><dd>{{ inv.due_date|datum }}</dd>{% endif %}
+      {% if inv.period %}<dt>Periode</dt><dd>{{ inv.period }}</dd>{% endif %}
+      <dt>Btw</dt><dd>{{ VAT_MODES[inv.vat_mode] }}</dd>
+      {% if inv.paid_date %}<dt>Betaald op</dt><dd>{{ inv.paid_date|datum }}</dd>{% endif %}
+      {% if credit_of %}<dt>Credit op</dt><dd><a href="{{ url_for('factuur', inv_id=credit_of.id) }}">{{ credit_of.number }}</a></dd>{% endif %}
+      {% for cr in credits %}<dt>Creditnota</dt><dd><a href="{{ url_for('factuur', inv_id=cr.id) }}">{{ cr.number or 'concept' }}</a></dd>{% endfor %}
+    </dl>
+    {% if mailto %}<p class="small muted" style="margin-top:14px">"Mail opstellen" opent je mailprogramma met onderwerp en tekst ingevuld. Voeg de gedownloade PDF als bijlage toe.</p>{% endif %}
+  </div>
+</div>
+{% endblock %}

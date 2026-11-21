@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Jaaroverzicht {{ year }}{% endblock %}
+{% block content %}
+<div class="head"><h1>Jaaroverzicht {{ year }}</h1><button onclick="window.print()">Afdrukken</button></div>
+<form class="filters" method="get">
+  <label>Jaar<select name="jaar" onchange="this.form.submit()">
+    {% for y in years %}<option {{ 'selected' if y == year }}>{{ y }}</option>{% endfor %}</select></label>
+  <a class="btn" href="{{ url_for('export', kind='facturen', jaar=year) }}">Facturen CSV</a>
+  <a class="btn" href="{{ url_for('export', kind='kosten', jaar=year) }}">Kosten CSV</a>
+</form>
+
+<div class="cards">
+  <div class="stat s-in"><div class="k"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M9 7h8v8"/></svg></span>Omzet (excl. btw)</div><div class="v">{{ omzet|eur }}</div></div>
+  <div class="stat s-out"><div class="k"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 7 7 17M15 17H7V9"/></svg></span>Kosten (excl. btw)</div><div class="v">{{ kosten|eur }}</div></div>
+  <div class="stat s-res{{ ' neg' if winst < 0 }}"><div class="k"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8M15 7h6v6"/></svg></span>Resultaat vóór afschrijvingen</div><div class="v">{{ winst|eur }}</div></div>
+</div>
+
+<div class="card">
+  <h2>Winst-en-verliesrekening</h2>
+  <table>
+    <tbody>
+      <tr><td><strong>Netto-omzet</strong> <span class="muted small">({{ n_inv }} facturen)</span></td><td class="num"><strong>{{ omzet|eur }}</strong></td></tr>
+      {% for c in cats %}<tr><td style="padding-left:24px">{{ c.category }} <span class="muted small">({{ c.n }})</span></td><td class="num">-{{ c.excl|eur }}</td></tr>{% endfor %}
+      <tr><td><strong>Totaal kosten</strong></td><td class="num"><strong>-{{ kosten|eur }}</strong></td></tr>
+    </tbody>
+    <tfoot><tr><td>Resultaat vóór afschrijvingen</td><td class="num">{{ winst|eur }}</td></tr></tfoot>
+  </table>
+</div>
+
+{% if investments %}
+<div class="card">
+  <h2>Investeringen (afschrijven)</h2>
+  <p class="small muted">Bedrijfsmiddelen vanaf € 450 excl. btw trek je niet in één keer af, maar schrijf je over meerdere jaren af. Ze tellen ook mee voor de kleinschaligheidsinvesteringsaftrek (KIA). Deze posten staan daarom niet in de kosten hierboven.</p>
+  <table><thead><tr><th>Datum</th><th>Leverancier</th><th>Omschrijving</th><th class="num">Excl. btw</th></tr></thead><tbody>
+    {% for e in investments %}<tr><td>{{ e.date|datum }}</td><td>{{ e.supplier or '' }}</td><td>{{ e.description or '' }}</td><td class="num">{{ e.amount_excl_cents|eur }}</td></tr>{% endfor %}
+  </tbody><tfoot><tr><td colspan="3">Totaal</td><td class="num">{{ investments|sum(attribute='amount_excl_cents')|eur }}</td></tr></tfoot></table>
+</div>
+{% endif %}
+
+<div class="split">
+  <div class="card">
+    <h2>Btw per kwartaal</h2>
+    <table><thead><tr><th>Kwartaal</th><th class="num">Verschuldigd</th><th class="num">Voorbelasting</th><th class="num">Saldo</th></tr></thead><tbody>
+      {% for r in quarters %}<tr class="link" onclick="location='{{ url_for('btw', jaar=year, kwartaal=r.q) }}'">
+        <td>Q{{ r.q }}</td><td class="num">{{ r.owed|eur }}</td><td class="num">{{ r.voor|eur }}</td><td class="num">{{ r.saldo|eur }}</td></tr>{% endfor %}
+    </tbody><tfoot><tr><td>Jaar</td><td class="num">{{ quarters|sum(attribute='owed')|eur }}</td><td class="num">{{ quarters|sum(attribute='voor')|eur }}</td><td class="num">{{ quarters|sum(attribute='saldo')|eur }}</td></tr></tfoot></table>
+  </div>
+  <div class="card">
+    <h2>Debiteuren per 31-12-{{ year }}</h2>
+    {% if debiteuren %}
+    <table><tbody>{% for i in debiteuren %}<tr><td>{{ i.number }} · {{ i.cname }}</td><td class="num">{{ i.total|eur }}</td></tr>{% endfor %}</tbody>
+      <tfoot><tr><td>Totaal</td><td class="num">{{ debiteuren_tot|eur }}</td></tr></tfoot></table>
+    {% else %}<p class="muted">Geen openstaande facturen op 31-12.</p>{% endif %}
+  </div>
+</div>
+
+<div class="card note">
+  <strong>Voor je aangifte inkomstenbelasting:</strong> het resultaat hierboven is de winst uit onderneming vóór afschrijvingen.
+  Zelfstandigenaftrek, startersaftrek, mkb-winstvrijstelling, KIA en eventuele privégebruik-correcties (auto, telefoon)
+  vul je in de aangifte zelf in. Openstaande debiteuren en te betalen btw per 31-12 heb je nodig voor de balans als je die invult.
+</div>
+<style>@media print { .top, .filters, .head button { display:none } body { background:#fff } .card { border:0 } }</style>
+{% endblock %}

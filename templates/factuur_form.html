@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% block title %}Factuur{% endblock %}
+{% block content %}
+<div class="head"><h1>{{ 'Concept bewerken' if inv_id else 'Nieuwe factuur' }}</h1></div>
+{% if not customers %}
+  <div class="card"><p>Je hebt nog geen klanten.</p>
+    <a class="btn primary" href="{{ url_for('klant_bewerken', next='factuur') }}">+ Eerst een klant toevoegen</a></div>
+{% else %}
+<form method="post" class="card" id="invform">
+  <div class="grid2">
+    <label>Klant
+      <select name="customer_id" required>
+        <option value="">— kies —</option>
+        {% for c in customers %}
+          <option value="{{ c.id }}" {{ 'selected' if (inv.customer_id|string) == (c.id|string) }}>{{ c.name }}</option>
+        {% endfor %}
+      </select>
+      <a class="small" href="{{ url_for('klant_bewerken', next='factuur') }}">+ nieuwe klant</a>
+    </label>
+    <label>Factuurdatum<input type="date" name="date" value="{{ inv.date or today }}" required></label>
+    <label>Periode / leverdatum <span class="muted">(optioneel, bv. "oktober 2026")</span>
+      <input name="period" value="{{ inv.period or '' }}"></label>
+    <label>Btw-situatie
+      <select name="vat_mode" id="vat_mode">
+        {% for k, v in VAT_MODES.items() %}<option value="{{ k }}" {{ 'selected' if inv.vat_mode == k }}>{{ v }}</option>{% endfor %}
+      </select></label>
+  </div>
+
+  <h2 style="margin-top:20px">Regels</h2>
+  <table class="lines">
+    <thead><tr><th style="width:52%">Omschrijving</th><th style="width:10%">Aantal</th><th style="width:15%">Prijs excl. btw</th>
+      <th class="ratecol" style="width:9%">Btw</th><th class="num" style="width:12%">Bedrag</th><th></th></tr></thead>
+    <tbody id="lines">
+    {% for l in lines %}
+      <tr>
+        <td><input name="description" value="{{ l.description }}"></td>
+        <td><input name="quantity" value="{{ l.quantity }}" inputmode="decimal" class="r"></td>
+        <td><input name="unit_price" value="{{ l.unit_price }}" inputmode="decimal" class="r" placeholder="0,00"></td>
+        <td class="ratecol"><select name="vat_rate">{% for r in ['21','9','0'] %}<option value="{{ r }}" {{ 'selected' if l.vat_rate|string == r }}>{{ r }}%</option>{% endfor %}</select></td>
+        <td class="num amt"></td>
+        <td><button type="button" class="del" title="Regel verwijderen">×</button></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <button type="button" id="addline" style="margin-top:6px">+ Regel</button>
+
+  <div class="totals" id="totals"></div>
+
+  <label style="margin-top:16px">Opmerking op factuur <span class="muted">(optioneel)</span>
+    <textarea name="notes">{{ inv.notes or '' }}</textarea></label>
+  <div class="actions" style="margin-top:16px">
+    <button class="primary">Opslaan als concept</button>
+    <a class="btn" href="{{ url_for('factuur', inv_id=inv_id) if inv_id else url_for('facturen') }}">Annuleren</a>
+  </div>
+</form>
+
+<template id="rowtpl">
+  <tr>
+    <td><input name="description"></td>
+    <td><input name="quantity" value="1" inputmode="decimal" class="r"></td>
+    <td><input name="unit_price" inputmode="decimal" class="r" placeholder="0,00"></td>
+    <td class="ratecol"><select name="vat_rate"><option value="21">21%</option><option value="9">9%</option><option value="0">0%</option></select></td>
+    <td class="num amt"></td>
+    <td><button type="button" class="del" title="Regel verwijderen">×</button></td>
+  </tr>
+</template>
+<script>
+(function () {
+  const tbody = document.getElementById('lines'), tpl = document.getElementById('rowtpl');
+  const mode = document.getElementById('vat_mode'), totals = document.getElementById('totals');
+  const fmt = n => n.toLocaleString('nl-NL', {style: 'currency', currency: 'EUR'});
+  const num = v => { v = (v || '').replace(/[€\s]/g, ''); if (v.includes(',')) v = v.replace(/\./g, '').replace(',', '.');
+                     const n = parseFloat(v); return isNaN(n) ? 0 : n; };
+  const cents = x => Math.round(x * 100);
+  function add(focus) { tbody.appendChild(tpl.content.cloneNode(true)); if (focus) tbody.lastElementChild.querySelector('input').focus(); calc(); }
+  function calc() {
+    const normal = mode.value === 'normaal', groups = {};
+    document.querySelectorAll('.ratecol').forEach(el => el.classList.toggle('hide', !normal));
+    tbody.querySelectorAll('tr').forEach(tr => {
+      const a = cents(num(tr.querySelector('[name=quantity]').value) * num(tr.querySelector('[name=unit_price]').value));
+      tr.querySelector('.amt').textContent = fmt(a / 100);
+      const r = normal ? tr.querySelector('[name=vat_rate]').value : '0';
+      groups[r] = (groups[r] || 0) + a;
+    });
+    let sub = 0, vat = 0, html = '';
+    Object.keys(groups).sort((a, b) => b - a).forEach(r => { sub += groups[r]; });
+    html += `<div><span>Subtotaal</span><span>${fmt(sub / 100)}</span></div>`;
+    Object.keys(groups).sort((a, b) => b - a).forEach(r => {
+      const v = Math.round(groups[r] * r / 100); vat += v;
+      if (normal) html += `<div><span>Btw ${r}% over ${fmt(groups[r] / 100)}</span><span>${fmt(v / 100)}</span></div>`;
+    });
+    if (!normal) html += `<div><span>Btw (verlegd / niet belast)</span><span>${fmt(0)}</span></div>`;
+    html += `<div class="grand"><span>Totaal</span><span>${fmt((sub + vat) / 100)}</span></div>`;
+    totals.innerHTML = html;
+  }
+  document.getElementById('addline').addEventListener('click', () => add(true));
+  tbody.addEventListener('click', e => { if (e.target.classList.contains('del')) { e.target.closest('tr').remove(); if (!tbody.children.length) add(); calc(); } });
+  document.getElementById('invform').addEventListener('input', calc);
+  mode.addEventListener('change', calc);
+  if (!tbody.children.length) add(); else calc();
+})();
+</script>
+{% endif %}
+{% endblock %}

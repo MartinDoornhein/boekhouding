@@ -1,0 +1,5 @@
+bonnen/
+.secret
+boekhouding.db
+.env
+.venv

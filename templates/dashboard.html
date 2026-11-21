@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Overzicht{% endblock %}
+{% block content %}
+{% if missing %}
+<div class="warnbox">Vul eerst je bedrijfsgegevens in (nodig op facturen):
+  <a href="{{ url_for('instellingen') }}">Instellingen</a>.</div>
+{% endif %}
+<div class="head">
+  <h1>Overzicht {{ year }}</h1>
+  <div class="actions">
+    <a class="btn primary" href="{{ url_for('factuur_nieuw') }}">+ Factuur</a>
+    <a class="btn primary" href="{{ url_for('kosten_bewerken') }}">+ Kosten</a>
+  </div>
+</div>
+<div class="cards">
+  <div class="stat s-in"><div class="k"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M9 7h8v8"/></svg></span>Omzet {{ year }} (excl. btw)</div><div class="v">{{ omzet|eur }}</div></div>
+  <div class="stat s-out"><div class="k"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 7 7 17M15 17H7V9"/></svg></span>Kosten {{ year }} (excl. btw)</div><div class="v">{{ kosten|eur }}</div></div>
+  <div class="stat s-res{{ ' neg' if omzet < kosten }}"><div class="k"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8M15 7h6v6"/></svg></span>Resultaat {{ year }}</div><div class="v">{{ (omzet - kosten)|eur }}</div></div>
+  <div class="stat s-btw"><div class="k"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 5 5 19"/><circle cx="7" cy="7" r="2.5"/><circle cx="17" cy="17" r="2.5"/></svg></span><span>Btw Q{{ q }} tot nu toe
+      {{ 'te betalen' if btw.saldo >= 0 else 'terug te vragen' }}</span></div>
+    <div class="v"><a href="{{ url_for('btw') }}">{{ btw.saldo|eur }}</a></div></div>
+</div>
+<div class="split">
+  <div class="card">
+    <h2>Openstaande facturen</h2>
+    {% if open_inv %}
+    <table>
+      <thead><tr><th>Nummer</th><th>Klant</th><th>Vervalt</th><th class="num">Totaal</th></tr></thead>
+      <tbody>
+      {% for i in open_inv %}
+        <tr class="link" onclick="location='{{ url_for('factuur', inv_id=i.id) }}'">
+          <td>{{ i.number }}</td><td>{{ i.cname }}</td>
+          <td>{% if i.overdue %}<span class="badge b-late">{{ i.due_date|datum }}</span>{% else %}{{ i.due_date|datum }}{% endif %}</td>
+          <td class="num">{{ i.total|eur }}</td></tr>
+      {% endfor %}
+      </tbody>
+      <tfoot><tr><td colspan="3">Totaal openstaand</td><td class="num">{{ open_inv|sum(attribute='total')|eur }}</td></tr></tfoot>
+    </table>
+    {% else %}<p class="muted">Geen openstaande facturen.</p>{% endif %}
+    {% if concepts %}
+      <p class="small muted" style="margin-top:12px">{{ concepts|length }} concept(en):
+      {% for i in concepts %}<a href="{{ url_for('factuur', inv_id=i.id) }}">{{ i.cname }} ({{ i.total|eur }})</a>{{ ', ' if not loop.last }}{% endfor %}</p>
+    {% endif %}
+  </div>
+  <div class="card">
+    <h2>Laatste kosten</h2>
+    {% if recent %}
+    <table><tbody>
+      {% for e in recent %}
+      <tr class="link" onclick="location='{{ url_for('kosten_bewerken', eid=e.id) }}'">
+        <td><div>{{ e.supplier or e.description }}</div><div class="small muted">{{ e.date|datum }}</div></td>
+        <td class="num">{{ e.total_cents|eur }}</td></tr>
+      {% endfor %}
+    </tbody></table>
+    {% else %}<p class="muted">Nog geen kosten ingeboekt.</p>{% endif %}
+  </div>
+</div>
+{% endblock %}

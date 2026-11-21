@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}Btw-aangifte Q{{ q }} {{ year }}{% endblock %}
+{% block content %}
+<div class="head">
+  <h1>Btw-aangifte Q{{ q }} {{ year }}</h1>
+  <button onclick="window.print()">Afdrukken</button>
+</div>
+<form class="filters" method="get">
+  <label>Jaar<select name="jaar" onchange="this.form.submit()">
+    {% for y in years %}<option {{ 'selected' if y == year }}>{{ y }}</option>{% endfor %}</select></label>
+  <label>Kwartaal<select name="kwartaal" onchange="this.form.submit()">
+    {% for n in range(1,5) %}<option value="{{ n }}" {{ 'selected' if n == q }}>Q{{ n }}</option>{% endfor %}</select></label>
+  <span class="muted small">Indienen en betalen uiterlijk {{ deadline|datum }}</span>
+</form>
+{% if concepts %}<div class="warnbox">Er staan {{ concepts }} conceptfactuur/-facturen in dit kwartaal. Die tellen niet mee tot je ze definitief maakt.</div>{% endif %}
+
+<div class="card">
+  <table class="rub">
+    <thead><tr><th>Rubriek</th><th>Omschrijving</th><th class="num">Omzet (exact)</th><th class="num">Btw (exact)</th>
+      <th class="num">Omzet invullen</th><th class="num">Btw invullen</th></tr></thead>
+    <tbody>
+    {% for r in d.rows %}
+      <tr class="{{ 'muted' if not r.base }}">
+        <td>{{ r.code }}</td><td>{{ r.label }}</td>
+        <td class="num">{{ r.base|eur }}</td><td class="num">{{ r.vat|eur if r.vat is not none else '' }}</td>
+        <td class="num big">€ {{ r.base_r }}</td><td class="num big">{{ ('€ ' ~ r.vat_r) if r.vat_r is not none else '' }}</td>
+      </tr>
+    {% endfor %}
+      <tr><td>5a</td><td>Verschuldigde omzetbelasting</td><td></td><td class="num">{{ d.owed|eur }}</td><td></td><td class="num big">€ {{ d.owed_r }}</td></tr>
+      <tr><td>5b</td><td>Voorbelasting</td><td></td><td class="num">{{ d.voorbelasting|eur }}</td><td></td><td class="num big">€ {{ d.voorbelasting_r }}</td></tr>
+    </tbody>
+    <tfoot><tr><td></td><td>{{ 'Te betalen' if d.saldo_r >= 0 else 'Terug te vragen' }}</td><td></td>
+      <td class="num">{{ d.saldo|eur }}</td><td></td><td class="num big">€ {{ d.saldo_r|abs }}</td></tr></tfoot>
+  </table>
+  <p class="small muted" style="margin-top:12px">De aangifte gaat in hele euro's. "Invullen" rondt omzet en verschuldigde btw naar beneden af en voorbelasting naar boven, in jouw voordeel. Lege rubrieken (1c, 1d, 2a, 3a, 3c) komen in deze administratie niet voor en blijven 0.</p>
+</div>
+
+{% if d.icp %}
+<div class="card">
+  <h2>Opgaaf intracommunautaire prestaties (ICP)</h2>
+  <p class="small muted">Je hebt diensten aan EU-ondernemers gefactureerd (rubriek 3b). Dien hiervoor ook de ICP-opgaaf in, per btw-id van de klant.</p>
+  <table><thead><tr><th>Btw-id</th><th>Klant</th><th>Land</th><th class="num">Bedrag diensten</th></tr></thead><tbody>
+    {% for i in d.icp %}<tr><td>{{ i.vat_id }}</td><td>{{ i.name }}</td><td>{{ i.country }}</td><td class="num">{{ i.amount|eur }}</td></tr>{% endfor %}
+  </tbody></table>
+</div>
+{% endif %}
+
+<div class="split">
+  <div class="card">
+    <h2>Facturen in dit kwartaal</h2>
+    {% if d.invoices %}
+    <table><thead><tr><th>Nummer</th><th>Datum</th><th>Klant</th><th class="num">Excl.</th><th class="num">Btw</th></tr></thead><tbody>
+    {% for i in d.invoices %}<tr class="link" onclick="location='{{ url_for('factuur', inv_id=i.id) }}'">
+      <td>{{ i.number }}</td><td>{{ i.date|datum }}</td><td>{{ i.cname }}</td><td class="num">{{ i.subtotal|eur }}</td><td class="num">{{ i.vat|eur }}</td></tr>{% endfor %}
+    </tbody></table>
+    {% else %}<p class="muted">Geen facturen.</p>{% endif %}
+  </div>
+  <div class="card">
+    <h2>Kosten in dit kwartaal</h2>
+    {% if d.expenses %}
+    <table><tbody>
+    {% for e in d.expenses %}<tr class="link" onclick="location='{{ url_for('kosten_bewerken', eid=e.id) }}'">
+      <td><div>{{ e.supplier or e.description }}</div><div class="small muted">{{ e.date|datum }}</div></td><td class="num">{{ e.vat_cents|eur }}</td></tr>{% endfor %}
+    </tbody></table>
+    {% else %}<p class="muted">Geen kosten.</p>{% endif %}
+  </div>
+</div>
+<style>@media print { .top, .filters, .head button { display:none } body { background:#fff } .card { border:0 } }</style>
+{% endblock %}

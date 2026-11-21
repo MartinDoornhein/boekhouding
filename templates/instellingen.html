@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Instellingen{% endblock %}
+{% block content %}
+<div class="head"><h1>Instellingen</h1></div>
+<form method="post" enctype="multipart/form-data">
+<div class="card">
+  <h2>Bedrijfsgegevens <span class="muted small">(komen op je facturen)</span></h2>
+  <div class="grid2">
+    <label>Bedrijfsnaam *<input name="bedrijfsnaam" value="{{ s.bedrijfsnaam }}"></label>
+    <label>Je naam<input name="naam" value="{{ s.naam }}"></label>
+    <label>Adres *<input name="adres" value="{{ s.adres }}"></label>
+    <label>Postcode<input name="postcode" value="{{ s.postcode }}"></label>
+    <label>Plaats<input name="plaats" value="{{ s.plaats }}"></label>
+    <label>Land<input name="land" value="{{ s.land }}"></label>
+    <label>E-mail<input name="email" value="{{ s.email }}"></label>
+    <label>Telefoon<input name="telefoon" value="{{ s.telefoon }}"></label>
+    <label>Website<input name="website" value="{{ s.website }}"></label>
+    <label>KvK-nummer *<input name="kvk" value="{{ s.kvk }}"></label>
+    <label>Btw-identificatienummer *<input name="btw_id" value="{{ s.btw_id }}" placeholder="NL000000000B01"></label>
+    <label>IBAN *<input name="iban" value="{{ s.iban }}"></label>
+    <label>BIC<input name="bic" value="{{ s.bic }}"></label>
+    <label>Logo (PNG/JPG)<input type="file" name="logo" accept=".png,.jpg,.jpeg">
+      {% if s.logo %}<span class="small"><img src="{{ url_for('logo') }}" alt="" style="max-height:32px;vertical-align:middle;margin-top:6px">
+        <label style="display:inline;font-weight:400"><input type="checkbox" name="remove_logo" value="1"> verwijderen</label></span>{% endif %}</label>
+  </div>
+</div>
+<div class="card">
+  <h2>Facturen</h2>
+  <div class="grid2">
+    <label>Betaaltermijn (dagen)<input name="betaaltermijn" type="number" min="0" value="{{ s.betaaltermijn }}"></label>
+    <label>Voorvoegsel factuurnummer <span class="muted">(optioneel, bv. "F" → F2026-001)</span><input name="factuur_prefix" value="{{ s.factuur_prefix }}"></label>
+  </div>
+  <label style="margin-top:12px">Voettekst op factuur <span class="muted">(optioneel, bv. algemene voorwaarden)</span>
+    <textarea name="factuur_voettekst">{{ s.factuur_voettekst }}</textarea></label>
+  <label style="margin-top:12px">Onderwerp e-mail<input name="mail_onderwerp" value="{{ s.mail_onderwerp }}"></label>
+  <label style="margin-top:12px">Tekst e-mail<textarea name="mail_tekst" rows="7">{{ s.mail_tekst }}</textarea></label>
+  <p class="small muted">Beschikbaar in e-mail: {nummer} {bedrag} {vervaldatum} {klant} {naam} {bedrijfsnaam}</p>
+</div>
+<button class="primary">Opslaan</button>
+</form>
+
+<div class="card" style="margin-top:18px">
+  <h2>Back-up en bewaarplicht</h2>
+  <p>Je administratie (inclusief bonnen) moet je 7 jaar bewaren. Alles staat in:<br><code>{{ data_dir }}</code></p>
+  <p>Zet die map in een map die automatisch geback-upt wordt (OneDrive, iCloud, NAS), of download regelmatig een back-up:</p>
+  <div class="actions">
+    <a class="btn primary" href="{{ url_for('backup') }}">Back-up downloaden (.zip)</a>
+    {% for y in years %}<a class="btn" href="{{ url_for('export', kind='facturen', jaar=y) }}">Facturen {{ y }}</a><a class="btn" href="{{ url_for('export', kind='kosten', jaar=y) }}">Kosten {{ y }}</a>{% endfor %}
+  </div>
+</div>
+{% endblock %}

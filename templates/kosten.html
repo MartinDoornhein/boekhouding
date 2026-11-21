@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Kosten{% endblock %}
+{% block content %}
+<div class="head"><h1>Kosten</h1><a class="btn primary" href="{{ url_for('kosten_bewerken') }}">+ Kosten</a></div>
+<form class="filters" method="get">
+  <label>Jaar<select name="jaar" onchange="this.form.submit()">
+    {% for y in years %}<option {{ 'selected' if y == year }}>{{ y }}</option>{% endfor %}</select></label>
+  <label>Kwartaal<select name="kwartaal" onchange="this.form.submit()">
+    <option value="">Heel jaar</option>
+    {% for n in range(1,5) %}<option value="{{ n }}" {{ 'selected' if n == q }}>Q{{ n }}</option>{% endfor %}</select></label>
+  <label>Categorie<select name="categorie" onchange="this.form.submit()">
+    <option value="">Alle</option>
+    {% for c in categories %}<option {{ 'selected' if c == cat }}>{{ c }}</option>{% endfor %}</select></label>
+  <a class="btn" href="{{ url_for('export', kind='kosten', jaar=year) }}">Export CSV</a>
+</form>
+<div class="card">
+{% if expenses %}
+<table>
+  <thead><tr><th>Datum</th><th>Leverancier</th><th>Omschrijving</th><th>Categorie</th><th class="num">Excl. btw</th><th class="num">Btw</th><th class="num">Totaal</th><th>Bon</th></tr></thead>
+  <tbody>
+  {% for e in expenses %}
+  <tr class="link" onclick="location='{{ url_for('kosten_bewerken', eid=e.id) }}'">
+    <td>{{ e.date|datum }}</td><td>{{ e.supplier or '' }}</td><td>{{ e.description or '' }}</td>
+    <td>{{ e.category }}{% if e.vat_type in ('eu_verlegd','buiten_eu_verlegd') %} <span class="badge b-concept">verlegd</span>{% endif %}</td>
+    <td class="num">{{ e.amount_excl_cents|eur }}</td><td class="num">{{ e.vat_cents|eur }}</td><td class="num">{{ e.total_cents|eur }}</td>
+    <td>{% if e.receipt_path %}<a href="{{ url_for('kosten_bon', eid=e.id) }}" target="_blank" onclick="event.stopPropagation()">bekijk</a>{% else %}<span class="muted">—</span>{% endif %}</td>
+  </tr>
+  {% endfor %}
+  </tbody>
+  <tfoot><tr><td colspan="4">Totaal ({{ expenses|length }})</td>
+    <td class="num">{{ sums.amount_excl_cents|eur }}</td><td class="num">{{ sums.vat_cents|eur }}</td><td class="num">{{ sums.total_cents|eur }}</td><td></td></tr></tfoot>
+</table>
+{% else %}<p class="muted">Geen kosten in deze periode.</p>{% endif %}
+</div>
+{% endblock %}

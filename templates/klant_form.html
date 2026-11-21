@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Klant{% endblock %}
+{% block content %}
+<div class="head"><h1>{{ 'Klant bewerken' if cid else 'Nieuwe klant' }}</h1></div>
+<form method="post" class="card">
+  <div class="grid2">
+    <label>Bedrijfsnaam / naam *<input name="name" value="{{ c.name or '' }}" required autofocus></label>
+    <label>Contactpersoon<input name="contact" value="{{ c.contact or '' }}"></label>
+    <label>E-mail (voor facturen)<input type="email" name="email" value="{{ c.email or '' }}"></label>
+    <label>Adres<input name="address" value="{{ c.address or '' }}"></label>
+    <label>Postcode<input name="postcode" value="{{ c.postcode or '' }}"></label>
+    <label>Plaats<input name="city" value="{{ c.city or '' }}"></label>
+    <label>Land<input name="country" value="{{ c.country or 'Nederland' }}"></label>
+    <label>Btw-id klant <span class="muted">(verplicht bij btw verleggen)</span><input name="vat_id" value="{{ c.vat_id or '' }}"></label>
+    <label>KvK-nummer klant<input name="kvk" value="{{ c.kvk or '' }}"></label>
+  </div>
+  <div class="actions" style="margin-top:16px">
+    <button class="primary">Opslaan</button>
+    <a class="btn" href="{{ url_for('klanten') }}">Annuleren</a>
+  </div>
+</form>
+{% if cid %}
+<form method="post" action="{{ url_for('klant_verwijderen', cid=cid) }}" onsubmit="return confirm('Klant verwijderen?')">
+  <button class="danger">Klant verwijderen</button>
+</form>
+{% endif %}
+{% endblock %}

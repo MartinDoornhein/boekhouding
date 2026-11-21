@@ -5,5 +5,5 @@ if not exist .venv (
   py -3 -m venv .venv || python -m venv .venv
   .venv\Scripts\pip install -q -e .
 )
-start "" http://127.0.0.1:5000
+start "" http://127.0.0.1:5050
 .venv\Scripts\python -m boekhouding

@@ -8,7 +8,9 @@ geen abonnement, data blijft op je eigen schijf.
 
 - **macOS / Linux:** `./start.sh`
 - **Windows:** dubbelklik `start.bat`
-- Handmatig: `pip install -e .` en daarna `flask --app boekhouding run` (of `python -m boekhouding`), open http://127.0.0.1:5000
+- Handmatig: `pip install -e .` en daarna `python -m boekhouding` (of `flask --app boekhouding run --port 5050`), open http://127.0.0.1:5050
+
+Poort 5000 wordt op macOS gebruikt door AirPlay-ontvanger (lege, witte pagina), daarom draait de app op 5050.
 
 Ga eerst naar **Instellingen** en vul je bedrijfsgegevens in (naam, adres, KvK, btw-id, IBAN).
 
@@ -54,7 +56,7 @@ De database is gewone SQLite, dus je kunt hem ook rechtstreeks bevragen of naar 
 ## Op de homelab draaien
 
 ```bash
-BOEKHOUDING_HOST=0.0.0.0 BOEKHOUDING_PORT=5000 BOEKHOUDING_WACHTWOORD='iets-sterks' python -m boekhouding
+BOEKHOUDING_HOST=0.0.0.0 BOEKHOUDING_PORT=5050 BOEKHOUDING_WACHTWOORD='iets-sterks' python -m boekhouding
 ```
 
 Met `BOEKHOUDING_WACHTWOORD` vraagt de browser om een wachtwoord (gebruikersnaam maakt niet uit).
@@ -84,7 +86,7 @@ data/                   lokale data (niet in git)
 ```bash
 pip install -e ".[test]"
 pytest
-flask --app boekhouding run --debug
+flask --app boekhouding run --port 5050 --debug
 ```
 
 Eigen instellingen voor Flask kun je kwijt in `data/config.py` (wordt automatisch geladen).

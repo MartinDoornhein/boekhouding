@@ -5,8 +5,8 @@
 <form class="filters" method="get">
   <label>Jaar<select name="jaar" onchange="this.form.submit()">
     {% for y in years %}<option {{ 'selected' if y == year }}>{{ y }}</option>{% endfor %}</select></label>
-  <a class="btn" href="{{ url_for('export', kind='facturen', jaar=year) }}">Facturen CSV</a>
-  <a class="btn" href="{{ url_for('export', kind='kosten', jaar=year) }}">Kosten CSV</a>
+  <a class="btn" href="{{ url_for('instellingen.export', kind='facturen', jaar=year) }}">Facturen CSV</a>
+  <a class="btn" href="{{ url_for('instellingen.export', kind='kosten', jaar=year) }}">Kosten CSV</a>
 </form>
 
 <div class="cards">
@@ -41,7 +41,7 @@
   <div class="card">
     <h2>Btw per kwartaal</h2>
     <table><thead><tr><th>Kwartaal</th><th class="num">Verschuldigd</th><th class="num">Voorbelasting</th><th class="num">Saldo</th></tr></thead><tbody>
-      {% for r in quarters %}<tr class="link" onclick="location='{{ url_for('btw', jaar=year, kwartaal=r.q) }}'">
+      {% for r in quarters %}<tr class="link" onclick="location='{{ url_for('rapportage.btw', jaar=year, kwartaal=r.q) }}'">
         <td>Q{{ r.q }}</td><td class="num">{{ r.owed|eur }}</td><td class="num">{{ r.voor|eur }}</td><td class="num">{{ r.saldo|eur }}</td></tr>{% endfor %}
     </tbody><tfoot><tr><td>Jaar</td><td class="num">{{ quarters|sum(attribute='owed')|eur }}</td><td class="num">{{ quarters|sum(attribute='voor')|eur }}</td><td class="num">{{ quarters|sum(attribute='saldo')|eur }}</td></tr></tfoot></table>
   </div>

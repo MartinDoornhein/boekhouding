@@ -4,7 +4,7 @@
 <div class="head"><h1>{{ 'Concept bewerken' if inv_id else 'Nieuwe factuur' }}</h1></div>
 {% if not customers %}
   <div class="card"><p>Je hebt nog geen klanten.</p>
-    <a class="btn primary" href="{{ url_for('klant_bewerken', next='factuur') }}">+ Eerst een klant toevoegen</a></div>
+    <a class="btn primary" href="{{ url_for('klanten.klant_bewerken', next='factuur') }}">+ Eerst een klant toevoegen</a></div>
 {% else %}
 <form method="post" class="card" id="invform">
   <div class="grid2">
@@ -15,7 +15,7 @@
           <option value="{{ c.id }}" {{ 'selected' if (inv.customer_id|string) == (c.id|string) }}>{{ c.name }}</option>
         {% endfor %}
       </select>
-      <a class="small" href="{{ url_for('klant_bewerken', next='factuur') }}">+ nieuwe klant</a>
+      <a class="small" href="{{ url_for('klanten.klant_bewerken', next='factuur') }}">+ nieuwe klant</a>
     </label>
     <label>Factuurdatum<input type="date" name="date" value="{{ inv.date or today }}" required></label>
     <label>Periode / leverdatum <span class="muted">(optioneel, bv. "oktober 2026")</span>
@@ -51,7 +51,7 @@
     <textarea name="notes">{{ inv.notes or '' }}</textarea></label>
   <div class="actions" style="margin-top:16px">
     <button class="primary">Opslaan als concept</button>
-    <a class="btn" href="{{ url_for('factuur', inv_id=inv_id) if inv_id else url_for('facturen') }}">Annuleren</a>
+    <a class="btn" href="{{ url_for('facturen.factuur', inv_id=inv_id) if inv_id else url_for('facturen.facturen') }}">Annuleren</a>
   </div>
 </form>
 

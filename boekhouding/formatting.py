@@ -12,7 +12,7 @@ def parse_money(value, default=None):
     """'1.234,56' / '1234.56' / '€ 12' -> centen (int)."""
     if value is None:
         return default
-    s = str(value).strip().replace("€", "").replace(" ", "").replace(" ", "")
+    s = str(value).strip().replace("€", "").replace(" ", "").replace("\xa0", "")
     if not s:
         return default
     if "," in s:

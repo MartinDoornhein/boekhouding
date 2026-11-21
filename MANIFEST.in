@@ -1,0 +1,4 @@
+include boekhouding/schema.sql
+graft boekhouding/static
+graft boekhouding/templates
+global-exclude *.pyc

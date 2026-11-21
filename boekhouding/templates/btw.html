@@ -50,7 +50,7 @@
     <h2>Facturen in dit kwartaal</h2>
     {% if d.invoices %}
     <table><thead><tr><th>Nummer</th><th>Datum</th><th>Klant</th><th class="num">Excl.</th><th class="num">Btw</th></tr></thead><tbody>
-    {% for i in d.invoices %}<tr class="link" onclick="location='{{ url_for('factuur', inv_id=i.id) }}'">
+    {% for i in d.invoices %}<tr class="link" onclick="location='{{ url_for('facturen.factuur', inv_id=i.id) }}'">
       <td>{{ i.number }}</td><td>{{ i.date|datum }}</td><td>{{ i.cname }}</td><td class="num">{{ i.subtotal|eur }}</td><td class="num">{{ i.vat|eur }}</td></tr>{% endfor %}
     </tbody></table>
     {% else %}<p class="muted">Geen facturen.</p>{% endif %}
@@ -59,7 +59,7 @@
     <h2>Kosten in dit kwartaal</h2>
     {% if d.expenses %}
     <table><tbody>
-    {% for e in d.expenses %}<tr class="link" onclick="location='{{ url_for('kosten_bewerken', eid=e.id) }}'">
+    {% for e in d.expenses %}<tr class="link" onclick="location='{{ url_for('kosten.kosten_bewerken', eid=e.id) }}'">
       <td><div>{{ e.supplier or e.description }}</div><div class="small muted">{{ e.date|datum }}</div></td><td class="num">{{ e.vat_cents|eur }}</td></tr>{% endfor %}
     </tbody></table>
     {% else %}<p class="muted">Geen kosten.</p>{% endif %}

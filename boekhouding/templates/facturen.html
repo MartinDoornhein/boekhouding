@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Facturen{% endblock %}
 {% block content %}
-<div class="head"><h1>Facturen</h1><a class="btn primary" href="{{ url_for('factuur_nieuw') }}">+ Factuur</a></div>
+<div class="head"><h1>Facturen</h1><a class="btn primary" href="{{ url_for('facturen.factuur_nieuw') }}">+ Factuur</a></div>
 <form class="filters" method="get">
   <label>Jaar<select name="jaar" onchange="this.form.submit()">
     {% for y in years %}<option {{ 'selected' if y == year }}>{{ y }}</option>{% endfor %}</select></label>
@@ -10,7 +10,7 @@
     {% for k, v in [('concept','Concept'),('open','Open'),('betaald','Betaald')] %}
       <option value="{{ k }}" {{ 'selected' if k == status }}>{{ v }}</option>{% endfor %}
   </select></label>
-  <a class="btn" href="{{ url_for('export', kind='facturen', jaar=year) }}">Export CSV</a>
+  <a class="btn" href="{{ url_for('instellingen.export', kind='facturen', jaar=year) }}">Export CSV</a>
 </form>
 <div class="card">
 {% if invoices %}
@@ -18,7 +18,7 @@
   <thead><tr><th>Nummer</th><th>Datum</th><th>Klant</th><th>Status</th><th class="num">Excl. btw</th><th class="num">Btw</th><th class="num">Totaal</th></tr></thead>
   <tbody>
   {% for i in invoices %}
-  <tr class="link" onclick="location='{{ url_for('factuur', inv_id=i.id) }}'">
+  <tr class="link" onclick="location='{{ url_for('facturen.factuur', inv_id=i.id) }}'">
     <td>{{ i.number or '—' }}{% if i.credit_of %} <span class="small muted">credit</span>{% endif %}</td>
     <td>{{ i.date|datum }}</td><td>{{ i.cname }}</td>
     <td>{% if i.overdue %}<span class="badge b-late">te laat</span>{% else %}<span class="badge b-{{ i.status }}">{{ i.status }}</span>{% endif %}</td>

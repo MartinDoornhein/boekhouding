@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}Boekhouding{% endblock %} · {{ s.bedrijfsnaam or 'Boekhouding' }}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+{% set ep = request.endpoint or '' %}
+{% set naam = s.bedrijfsnaam or 'Boekhouding' %}
+{% macro ic(d) %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{{ d|safe }}</svg>{% endmacro %}
+<header class="top">
+  <div class="wrap bar">
+    <a class="brand" href="{{ url_for('rapportage.dashboard') }}"><span class="mark">{{ naam[:1]|upper }}</span>{{ naam }}</a>
+    <nav>
+      <a href="{{ url_for('rapportage.dashboard') }}" class="{{ 'on' if ep == 'rapportage.dashboard' }}">{{ ic('<rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/>') }}Overzicht</a>
+      <a href="{{ url_for('facturen.facturen') }}" class="{{ 'on' if ep.startswith('facturen.') }}">{{ ic('<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/>') }}Facturen</a>
+      <a href="{{ url_for('kosten.kosten') }}" class="{{ 'on' if ep.startswith('kosten.') }}">{{ ic('<path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/>') }}Kosten</a>
+      <a href="{{ url_for('klanten.klanten') }}" class="{{ 'on' if ep.startswith('klanten.') }}">{{ ic('<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M21.5 20a6.5 6.5 0 0 0-4-6"/>') }}Klanten</a>
+      <a href="{{ url_for('rapportage.btw') }}" class="{{ 'on' if ep == 'rapportage.btw' }}">{{ ic('<path d="M19 5 5 19"/><circle cx="7" cy="7" r="2.5"/><circle cx="17" cy="17" r="2.5"/>') }}Btw-aangifte</a>
+      <a href="{{ url_for('rapportage.jaar') }}" class="{{ 'on' if ep == 'rapportage.jaar' }}">{{ ic('<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>') }}Jaaroverzicht</a>
+      <a href="{{ url_for('instellingen.instellingen') }}" class="{{ 'on' if ep == 'instellingen.instellingen' }}">{{ ic('<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>') }}Instellingen</a>
+    </nav>
+  </div>
+</header>
+<main class="wrap">
+  {% with msgs = get_flashed_messages(with_categories=true) %}
+    {% for cat, m in msgs %}<div class="flash {{ cat }}">{{ m }}</div>{% endfor %}
+  {% endwith %}
+  {% block content %}{% endblock %}
+</main>
+</body>
+</html>

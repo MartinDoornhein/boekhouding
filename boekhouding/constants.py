@@ -1,14 +1,4 @@
-"""Paden, omgevingsvariabelen en vaste waarden."""
-import os
-from pathlib import Path
-
-BASE_DIR = Path(__file__).resolve().parent
-DATA_DIR = Path(os.environ.get("BOEKHOUDING_DATA", BASE_DIR / "data")).resolve()
-DB_PATH = DATA_DIR / "boekhouding.db"
-UPLOAD_DIR = DATA_DIR / "bonnen"
-PASSWORD = os.environ.get("BOEKHOUDING_WACHTWOORD", "")
-MAX_UPLOAD_BYTES = 25 * 1024 * 1024
-
+"""Vaste waarden: btw-situaties, kostencategorieën en standaardinstellingen."""
 VAT_MODES = {
     "normaal": "Normaal – Nederlandse btw",
     "verlegd_nl": "Btw verlegd (binnenland)",

@@ -24,7 +24,7 @@
       <input name="vat_override" id="vat_override" value="{{ e.vat_override or '' }}" inputmode="decimal" placeholder="automatisch"></label>
     <label>Bon / factuur (pdf of foto)
       <input type="file" name="receipt" accept=".pdf,image/*">
-      {% if e.receipt_path %}<span class="small"><a href="{{ url_for('kosten_bon', eid=eid) }}" target="_blank">Huidige bon bekijken</a>
+      {% if e.receipt_path %}<span class="small"><a href="{{ url_for('kosten.kosten_bon', eid=eid) }}" target="_blank">Huidige bon bekijken</a>
         · <label style="display:inline;font-weight:400"><input type="checkbox" name="remove_receipt" value="1"> verwijderen</label></span>{% endif %}
     </label>
   </div>
@@ -32,11 +32,11 @@
   <div class="actions" style="margin-top:16px">
     <button class="primary">Opslaan</button>
     {% if not eid %}<button name="again" value="1">Opslaan en volgende</button>{% endif %}
-    <a class="btn" href="{{ url_for('kosten') }}">Annuleren</a>
+    <a class="btn" href="{{ url_for('kosten.kosten') }}">Annuleren</a>
   </div>
 </form>
 {% if eid %}
-<form method="post" action="{{ url_for('kosten_verwijderen', eid=eid) }}" onsubmit="return confirm('Deze kostenpost en de bon verwijderen?')">
+<form method="post" action="{{ url_for('kosten.kosten_verwijderen', eid=eid) }}" onsubmit="return confirm('Deze kostenpost en de bon verwijderen?')">
   <button class="danger">Verwijderen</button></form>
 {% endif %}
 <script>

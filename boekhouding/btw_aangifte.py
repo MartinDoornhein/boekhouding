@@ -1,6 +1,6 @@
 """Btw-aangifte: rubrieken berekenen over een periode."""
-from database import db
-from invoices import invoice_summaries
+from .db import get_db
+from .invoices import invoice_summaries
 
 RUBRIEKEN = [
     ("1a", "Leveringen/diensten belast met hoog tarief"),
@@ -38,7 +38,7 @@ def compute_btw(start, end):
         else:
             R["1e"]["base"] += inv["subtotal"]
 
-    expenses = db().execute("SELECT * FROM expenses WHERE date >= ? AND date < ? ORDER BY date",
+    expenses = get_db().execute("SELECT * FROM expenses WHERE date >= ? AND date < ? ORDER BY date",
                             (start, end)).fetchall()
     voorbelasting = 0
     for e in expenses:

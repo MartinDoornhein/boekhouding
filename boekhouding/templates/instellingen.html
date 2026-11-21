@@ -20,7 +20,7 @@
     <label>IBAN *<input name="iban" value="{{ s.iban }}"></label>
     <label>BIC<input name="bic" value="{{ s.bic }}"></label>
     <label>Logo (PNG/JPG)<input type="file" name="logo" accept=".png,.jpg,.jpeg">
-      {% if s.logo %}<span class="small"><img src="{{ url_for('logo') }}" alt="" style="max-height:32px;vertical-align:middle;margin-top:6px">
+      {% if s.logo %}<span class="small"><img src="{{ url_for('instellingen.logo') }}" alt="" style="max-height:32px;vertical-align:middle;margin-top:6px">
         <label style="display:inline;font-weight:400"><input type="checkbox" name="remove_logo" value="1"> verwijderen</label></span>{% endif %}</label>
   </div>
 </div>
@@ -44,8 +44,8 @@
   <p>Je administratie (inclusief bonnen) moet je 7 jaar bewaren. Alles staat in:<br><code>{{ data_dir }}</code></p>
   <p>Zet die map in een map die automatisch geback-upt wordt (OneDrive, iCloud, NAS), of download regelmatig een back-up:</p>
   <div class="actions">
-    <a class="btn primary" href="{{ url_for('backup') }}">Back-up downloaden (.zip)</a>
-    {% for y in years %}<a class="btn" href="{{ url_for('export', kind='facturen', jaar=y) }}">Facturen {{ y }}</a><a class="btn" href="{{ url_for('export', kind='kosten', jaar=y) }}">Kosten {{ y }}</a>{% endfor %}
+    <a class="btn primary" href="{{ url_for('instellingen.backup') }}">Back-up downloaden (.zip)</a>
+    {% for y in years %}<a class="btn" href="{{ url_for('instellingen.export', kind='facturen', jaar=y) }}">Facturen {{ y }}</a><a class="btn" href="{{ url_for('instellingen.export', kind='kosten', jaar=y) }}">Kosten {{ y }}</a>{% endfor %}
   </div>
 </div>
 {% endblock %}

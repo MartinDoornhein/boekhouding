@@ -8,7 +8,7 @@ geen abonnement, data blijft op je eigen schijf.
 
 - **macOS / Linux:** `./start.sh`
 - **Windows:** dubbelklik `start.bat`
-- Handmatig: `pip install -r requirements.txt` en daarna `python app.py`, open http://127.0.0.1:5000
+- Handmatig: `pip install -e .` en daarna `flask --app boekhouding run` (of `python -m boekhouding`), open http://127.0.0.1:5000
 
 Ga eerst naar **Instellingen** en vul je bedrijfsgegevens in (naam, adres, KvK, btw-id, IBAN).
 
@@ -44,22 +44,50 @@ Dat is de input voor de winst uit onderneming in je IB-aangifte.
 
 ## Data en back-up (bewaarplicht 7 jaar)
 
-Alles staat in de map `data/` naast de app: `boekhouding.db` (SQLite) en `bonnen/<jaar>/`.
+Alles staat in de map `data/` naast de app (de Flask instance-map, staat in `.gitignore`): `boekhouding.db` (SQLite) en `bonnen/<jaar>/`.
 - Zet `data/` in een map die automatisch geback-upt wordt, of
 - gebruik *Instellingen → Back-up downloaden* (zip met database en alle bonnen), of
-- kies zelf een locatie: `BOEKHOUDING_DATA=/pad/naar/map python app.py`.
+- kies zelf een locatie: `BOEKHOUDING_DATA=/pad/naar/map python -m boekhouding`.
 
 De database is gewone SQLite, dus je kunt hem ook rechtstreeks bevragen of naar je eigen tooling exporteren.
 
 ## Op de homelab draaien
 
 ```bash
-BOEKHOUDING_HOST=0.0.0.0 BOEKHOUDING_PORT=5000 BOEKHOUDING_WACHTWOORD='iets-sterks' python app.py
+BOEKHOUDING_HOST=0.0.0.0 BOEKHOUDING_PORT=5000 BOEKHOUDING_WACHTWOORD='iets-sterks' python -m boekhouding
 ```
 
 Met `BOEKHOUDING_WACHTWOORD` vraagt de browser om een wachtwoord (gebruikersnaam maakt niet uit).
 Stel de app niet open naar internet. Gebruik hem alleen op je LAN of via VPN/Tailscale, eventueel achter een reverse proxy met HTTPS.
-Voor productiegebruik kun je `waitress` of `gunicorn` gebruiken in plaats van de ingebouwde server.
+Voor productiegebruik kun je `waitress` of `gunicorn` gebruiken in plaats van de ingebouwde server,
+bijvoorbeeld `waitress-serve --call boekhouding:create_app`.
+
+## Ontwikkelen
+
+De opbouw volgt de [Flask-tutorial](https://flask.palletsprojects.com/en/stable/tutorial/layout/):
+
+```
+boekhouding/            het package (create_app in __init__.py)
+├── db.py, schema.sql   SQLite-verbinding en schema (`flask --app boekhouding init-db`)
+├── constants.py        btw-situaties, categorieën, standaardinstellingen
+├── formatting.py       geld en datums parsen/opmaken
+├── invoices.py         factuurberekeningen
+├── btw_aangifte.py     btw-aangifte per kwartaal
+├── pdf.py              factuur-PDF (ReportLab)
+├── rapportage.py       blueprint: overzicht, btw, jaar
+├── klanten.py, facturen.py, kosten.py, instellingen.py   overige blueprints
+├── templates/, static/
+tests/                  pytest
+data/                   lokale data (niet in git)
+```
+
+```bash
+pip install -e ".[test]"
+pytest
+flask --app boekhouding run --debug
+```
+
+Eigen instellingen voor Flask kun je kwijt in `data/config.py` (wordt automatisch geladen).
 
 ## Wat er (bewust) niet in zit
 
